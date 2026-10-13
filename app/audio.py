@@ -66,6 +66,24 @@ class _Resampler:
         return x.astype(np.float32, copy=False)
 
 
+def decode_file(path: str) -> np.ndarray:
+    """Decode any audio/video file to 16 kHz mono float32 (PyAV, no ffmpeg install needed)."""
+    import av
+
+    out = []
+    with av.open(str(path), mode="r") as container:
+        stream = next(s for s in container.streams if s.type == "audio")
+        rs = av.AudioResampler(format="s16", layout="mono", rate=SR)
+        for frame in container.decode(stream):
+            for f in rs.resample(frame) or []:
+                out.append(f.to_ndarray().reshape(-1))
+        for f in rs.resample(None) or []:
+            out.append(f.to_ndarray().reshape(-1))
+    if not out:
+        return np.zeros(0, np.float32)
+    return (np.concatenate(out).astype(np.float32) / 32768.0)
+
+
 # ----------------------------------------------------------------------------- devices
 
 def list_devices() -> list[dict]:
@@ -269,9 +287,7 @@ class FileSource(BaseSource):
 
     def _run(self) -> None:
         try:
-            from faster_whisper.audio import decode_audio
-
-            audio = decode_audio(self.path, sampling_rate=SR)
+            audio = decode_file(self.path)
         except Exception as e:
             raise AudioError(f"Не вдалося прочитати файл (формат не підтримується?): {e}")
         audio = np.concatenate([audio.astype(np.float32), np.zeros(int(self.tail_silence * SR), np.float32)])

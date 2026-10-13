@@ -48,7 +48,35 @@ def main() -> int:
             print("     Перевірте підключення до інтернету та запустіть START.bat ще раз.")
             if name == names[0]:
                 return 1
+    ensure_cloudflared()
     return 0
+
+
+def ensure_cloudflared() -> None:
+    exe = paths.CLOUDFLARED_EXE
+    if exe.exists() and exe.stat().st_size > 1_000_000:
+        return
+    print("  Завантаження cloudflared (для публічного посилання)…")
+    import httpx
+
+    from .tunnel import DOWNLOAD_URL
+
+    tmp = exe.with_suffix(".part")
+    try:
+        with httpx.stream("GET", DOWNLOAD_URL, follow_redirects=True, timeout=60) as r:
+            r.raise_for_status()
+            total = int(r.headers.get("content-length", 0)) or 1
+            done = 0
+            with open(tmp, "wb") as f:
+                for chunk in r.iter_bytes(1 << 16):
+                    f.write(chunk)
+                    done += len(chunk)
+                    bar = "#" * int(30 * done / total)
+                    print(f"\r    [{bar:<30}] {done * 100 // total:3d}%", end="", flush=True)
+        tmp.replace(exe)
+        print("\n    готово ✓")
+    except Exception as e:
+        print(f"\n  ⚠ Не вдалося завантажити cloudflared: {e}. Програма спробує ще раз під час роботи.")
 
 
 if __name__ == "__main__":

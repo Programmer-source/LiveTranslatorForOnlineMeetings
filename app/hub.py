@@ -42,8 +42,10 @@ class Hub:
         self.set_partial("", line["id"])
         return line
 
-    def set_translation(self, line_id: int, uk: str, provider: str = "") -> dict:
+    def set_translation(self, line_id: int, uk: str, provider: str = "", latency: float | None = None) -> dict:
         line = self.lines[line_id]
+        if latency is not None:
+            line["lat"] = round(latency, 2)
         line["uk"] = uk
         line["status"] = "done"
         line["err"] = ""
@@ -73,7 +75,8 @@ class Hub:
             self._fanout(self.status_msg())
 
     def status_msg(self) -> dict:
-        return {"type": "status", "state": self.state, "session": self.session, "has_lines": bool(self.lines)}
+        return {"type": "status", "state": self.state, "session": self.session, "started_at": self.started_at,
+                "has_lines": bool(self.lines)}
 
     # ------------------------------------------------------------------ clients
     def _fanout(self, msg: dict) -> None:

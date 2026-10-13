@@ -1,1 +1,457 @@
-<html></html>
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Панель керування — Zoom UA субтитри</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root{--bg:#0f1216;--card:#171b21;--card2:#1f242c;--line:#2b313a;--text:#e9edf2;--muted:#98a2b0;--accent:#ffd500;--blue:#2f7cf6;--ok:#2fbf71;--warn:#f0a500;--err:#e5484d}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:#7fb0ff}
+header{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:10;flex-wrap:wrap}
+header h1{font-size:19px;margin:0}
+header .sub{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+#bigBtn{font-size:22px;font-weight:800;border:0;border-radius:14px;padding:14px 34px;cursor:pointer;background:var(--ok);color:#fff;box-shadow:0 6px 22px rgba(47,191,113,.3);min-width:230px}
+#bigBtn.stop{background:var(--err);box-shadow:0 6px 22px rgba(229,72,77,.3)}
+#bigBtn:disabled{opacity:.5;cursor:wait}
+main{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;padding:16px 20px 60px;max-width:1500px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.card h2{font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+.card.wide{grid-column:1/-1}
+.btn{border:1px solid var(--line);background:var(--card2);border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.yel{background:var(--accent);border-color:var(--accent);color:#111}
+.btn.danger{color:#ff8a8d}
+input[type=text],input[type=password],input[type=url],select,textarea{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--card2)}
+label.lbl{display:block;font-weight:600;font-size:13px;margin:10px 0 5px;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row>input,.row>select{flex:1;min-width:160px}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.st{background:var(--card2);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;min-width:0}
+.dot{width:14px;height:14px;border-radius:50%;flex:none;margin-top:3px;background:#555}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.error{background:var(--err)}.dot.idle,.dot.off{background:#555}
+.st b{display:block;font-size:14px}
+.st span{font-size:12.5px;color:var(--muted);word-break:break-word}
+.metrics{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.metric{background:var(--card2);border-radius:12px;padding:8px 14px;min-width:120px}
+.metric b{font-size:22px;display:block}
+.metric span{font-size:12px;color:var(--muted)}
+.meter{height:16px;border-radius:8px;background:var(--card2);overflow:hidden;border:1px solid var(--line);margin-top:10px}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ok) 0 70%,var(--warn) 70% 90%,var(--err) 90%);transition:width .1s}
+.hint{color:var(--muted);font-size:13px}
+.msg{margin-top:8px;font-size:14px}
+.msg.ok{color:var(--ok)}.msg.err{color:#ff8a8d}
+.link{font-size:18px;font-weight:700;word-break:break-all;padding:10px 12px;background:var(--card2);border-radius:10px;border:1px dashed var(--line)}
+.qr{background:#fff;border-radius:10px;padding:6px;width:170px;height:170px}
+.qr svg,.qr img{width:100%;height:100%}
+.preview{display:grid;gap:8px;max-height:360px;overflow:auto}
+.pv{background:var(--card2);border-radius:10px;padding:8px 10px}
+.pv .en{color:var(--muted);font-size:13px}
+.pv .uk{font-size:16px;font-weight:600}
+.pv.pending .uk{color:var(--warn);font-weight:500}
+.help{background:#1b2330;border:1px solid #2b3a52;border-radius:12px;padding:10px 14px;font-size:14px;margin-top:10px}
+.help ol{margin:6px 0 6px 18px;padding:0}
+.help li{margin:4px 0}
+table.gl{width:100%;border-collapse:collapse}
+table.gl td{padding:4px}
+table.gl input{width:100%}
+table.gl th{text-align:left;font-size:12px;color:var(--muted);padding:4px}
+.warnbox{background:#3a2a07;border:1px solid #6a4d0b;color:#ffd78a;border-radius:12px;padding:10px 14px;margin:12px 20px 0}
+.warnbox:empty{display:none}
+.progress{height:8px;border-radius:4px;background:var(--card2);overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--blue);width:0}
+details summary{cursor:pointer;font-weight:600;color:var(--muted);margin-top:8px}
+textarea{min-height:90px;resize:vertical}
+/* wizard */
+#wiz{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+#wiz.open{display:flex}
+#wiz .box{background:var(--card);border:1px solid var(--line);border-radius:18px;width:min(640px,100%);padding:22px;max-height:95vh;overflow:auto}
+#wiz h2{margin:0 0 6px}
+.steps{display:flex;gap:6px;margin-bottom:14px}
+.steps i{flex:1;height:5px;border-radius:3px;background:var(--card2)}
+.steps i.on{background:var(--accent)}
+.wstep{display:none}.wstep.on{display:block}
+.wacts{display:flex;justify-content:space-between;margin-top:18px;gap:8px}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#222;border:1px solid #444;padding:10px 16px;border-radius:12px;display:none;z-index:60}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🇺🇦 Zoom — українські субтитри наживо</h1><div class="sub">Панель керування (бачите лише ви) · <span id="ver"></span></div></div>
+  <span class="spacer"></span>
+  <button id="bigBtn" disabled>▶ СТАРТ</button>
+</header>
+<div id="warn" class="warnbox"></div>
+
+<main>
+  <!-- STATUS -->
+  <section class="card wide">
+    <h2>📊 Стан системи</h2>
+    <div class="status-grid">
+      <div class="st"><i class="dot" id="dAudio"></i><div><b>Звук</b><span id="tAudio">—</span></div></div>
+      <div class="st"><i class="dot" id="dStt"></i><div><b>Розпізнавання (англ.)</b><span id="tStt">—</span></div></div>
+      <div class="st"><i class="dot" id="dTr"></i><div><b>Переклад (укр.)</b><span id="tTr">—</span></div></div>
+      <div class="st"><i class="dot" id="dTun"></i><div><b>Публічне посилання</b><span id="tTun">—</span></div></div>
+      <div class="st"><i class="dot" id="dZoom"></i><div><b>Субтитри в Zoom</b><span id="tZoom">—</span></div></div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><b id="mDelay">0 с</b><span>затримка</span></div>
+      <div class="metric"><b id="mBacklog">0</b><span>у черзі</span></div>
+      <div class="metric"><b id="mLines">0</b><span>рядків перекладено</span></div>
+      <div class="metric"><b id="mViewers">0</b><span>глядачів на сторінці</span></div>
+    </div>
+  </section>
+
+  <!-- AUDIO -->
+  <section class="card">
+    <h2>🔊 Джерело звуку</h2>
+    <div class="row"><select id="device"></select><button class="btn" id="refreshDev" title="Оновити список">⟳</button></div>
+    <div class="meter" title="Рівень звуку"><i id="level"></i></div>
+    <p class="hint">Оберіть пристрій, через який ви <b>чуєте</b> Zoom (зазвичай — «типовий пристрій виводу»). Під час лекції смужка має рухатися, коли говорить лектор.</p>
+    <h2 style="margin-top:16px">🧪 Перевірка перед лекцією</h2>
+    <div class="row">
+      <button class="btn yel" id="testSample">▶ Тестовий звук (англ., 25 с)</button>
+      <label class="btn" for="testFile">📁 Обрати свій аудіо/відеофайл…</label>
+      <input type="file" id="testFile" accept="audio/*,video/*" hidden>
+    </div>
+    <div class="progress" id="testProg" hidden><i></i></div>
+    <p class="hint" id="testInfo">Тест проганяє весь ланцюжок: розпізнавання → переклад → сторінка для глядачів → субтитри Zoom.</p>
+  </section>
+
+  <!-- LINK -->
+  <section class="card">
+    <h2>🔗 Посилання для учасників</h2>
+    <div class="row" style="align-items:flex-start;flex-wrap:nowrap">
+      <div style="flex:1;min-width:0">
+        <div class="link" id="pubUrl">Створюється…</div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn pri" id="copyUrl">📋 Копіювати посилання</button>
+          <button class="btn yel" id="copyChat">💬 Копіювати повідомлення для чату</button>
+        </div>
+        <p class="hint">Вставте повідомлення в чат Zoom. Учасникам нічого не потрібно встановлювати. Посилання змінюється при кожному запуску програми.</p>
+        <p class="hint">Перевірити самому: <a id="localLink" target="_blank">сторінка глядача (локально)</a></p>
+      </div>
+      <div class="qr" id="qr" title="QR-код посилання"></div>
+    </div>
+    <details><summary>Текст повідомлення для чату</summary><textarea id="chatText" readonly></textarea>
+      <textarea id="chatText2" readonly style="margin-top:6px"></textarea></details>
+  </section>
+
+  <!-- PREVIEW -->
+  <section class="card">
+    <h2>👀 Останні рядки</h2>
+    <div class="preview" id="preview"><p class="hint">Тут з’являться англійський текст і український переклад.</p></div>
+  </section>
+
+  <!-- ZOOM -->
+  <section class="card">
+    <h2>💬 Вбудовані субтитри Zoom <span class="hint">(необов’язково)</span></h2>
+    <label class="lbl" for="zoomUrl">URL / API-токен субтитрів Zoom</label>
+    <div class="row"><input type="url" id="zoomUrl" placeholder="https://wmcc.zoom.us/closedcaption?id=…"><button class="btn pri" id="zoomTest">Перевірити</button></div>
+    <label class="row hint" style="margin-top:8px"><input type="checkbox" id="zoomOn"> Надсилати субтитри в Zoom</label>
+    <div class="msg" id="zoomMsg"></div>
+    <div class="help">
+      <b>Як отримати URL (1 раз на кожну зустріч):</b>
+      <ol>
+        <li>На сайті zoom.us → <b>Settings</b> → <b>Meeting</b> → <b>In Meeting (Advanced)</b> → увімкніть <b>Closed captioning</b> і <b>«Allow use of caption API Token to integrate with 3rd-party Closed Captioning services»</b>.</li>
+        <li>Під час зустрічі/вебінару організатор натискає <b>Captions / CC</b> (Субтитри) → <b>Set up manual captioner</b> (або «Third-party captioning service») → <b>Copy the API token</b>.</li>
+        <li>Вставте скопійоване сюди і натисніть «Перевірити».</li>
+      </ol>
+      <div class="hint">Назви меню можуть трохи відрізнятися залежно від версії Zoom. Якщо цієї опції немає у вашому акаунті — нічого страшного, посилання для глядачів працює завжди.</div>
+    </div>
+  </section>
+
+  <!-- KEYS -->
+  <section class="card">
+    <h2>🔑 Ключі перекладача</h2>
+    <label class="lbl" for="kGemini">Google Gemini API key (безкоштовно) <span id="hGemini"></span></label>
+    <div class="row"><input type="password" id="kGemini" placeholder="AIza…" autocomplete="off"><button class="btn pri" id="testGemini">Перевірити</button></div>
+    <div class="hint">Отримати: <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → увійдіть у Google → «Create API key» → скопіюйте та вставте сюди.</div>
+    <div class="msg" id="geminiMsg"></div>
+    <details><summary>Додатково: DeepL, Deepgram, моделі</summary>
+      <label class="lbl" for="kDeepl">DeepL API Free key (резервний перекладач) <span id="hDeepl"></span></label>
+      <input type="password" id="kDeepl" placeholder="…:fx" autocomplete="off">
+      <label class="lbl" for="kDeepgram">Deepgram API key (хмарне розпізнавання замість локального) <span id="hDeepgram"></span></label>
+      <input type="password" id="kDeepgram" autocomplete="off">
+      <label class="lbl" for="sttEngine">Розпізнавання мовлення</label>
+      <select id="sttEngine"><option value="whisper">Локально (Whisper, безкоштовно) — рекомендовано</option><option value="deepgram">Deepgram (хмара, потрібен ключ)</option></select>
+      <label class="lbl" for="whisperModel">Модель Whisper</label>
+      <select id="whisperModel"><option value="auto">Авто (рекомендовано)</option><option>large-v3</option><option>large-v3-turbo</option><option>medium.en</option><option>small.en</option></select>
+      <label class="lbl" for="gModels">Моделі Gemini (через кому, у порядку пріоритету)</label>
+      <input type="text" id="gModels">
+      <label class="lbl" for="gRpm">Ліміт запитів Gemini за хвилину</label>
+      <input type="text" id="gRpm">
+      <label class="row hint" style="margin-top:8px"><input type="checkbox" id="freeFb"> Резервний безкоштовний перекладач без ключа (якщо Gemini недоступний)</label>
+      <label class="row hint"><input type="checkbox" id="partials"> Показувати англійський текст наживо, поки готується переклад</label>
+      <p class="hint">Зміна розпізнавання чи моделі Whisper діє після перезапуску програми.</p>
+    </details>
+    <div class="row" style="margin-top:10px"><button class="btn pri" id="saveKeys">💾 Зберегти</button><span class="msg" id="keysMsg"></span></div>
+    <p class="hint">Ключі зберігаються лише на цьому комп’ютері (config.json) і ніколи не передаються глядачам.</p>
+  </section>
+
+  <!-- GLOSSARY -->
+  <section class="card">
+    <h2>📖 Глосарій (імена, терміни)</h2>
+    <p class="hint">Англійський термін → як перекладати. Залиште праве поле порожнім, щоб <b>не перекладати</b> (лишити англійською).</p>
+    <table class="gl"><thead><tr><th>English</th><th>Українською</th><th></th></tr></thead><tbody id="glBody"></tbody></table>
+    <div class="row" style="margin-top:8px"><button class="btn" id="glAdd">＋ Додати рядок</button><button class="btn pri" id="glSave">💾 Зберегти глосарій</button><span class="msg" id="glMsg"></span></div>
+  </section>
+
+  <!-- SESSION -->
+  <section class="card">
+    <h2>🗂 Сесія та записи</h2>
+    <p class="hint">Усі субтитри автоматично зберігаються в папку <b>transcripts</b> (українською, англійською, двомовний текст і .srt).</p>
+    <div class="row">
+      <button class="btn" id="openFolder">📂 Відкрити папку із записами</button>
+      <button class="btn danger" id="newSession">🆕 Почати нову сесію (очистити історію)</button>
+    </div>
+    <div class="msg" id="sessMsg"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="wizOpen">🧭 Майстер налаштування</button>
+      <button class="btn danger" id="quit">⏻ Вимкнути програму</button>
+    </div>
+    <p class="hint">Щоб вимкнути програму, можна також просто закрити чорне вікно.</p>
+  </section>
+</main>
+
+<!-- WIZARD -->
+<div id="wiz"><div class="box">
+  <div class="steps"><i></i><i></i><i></i><i></i></div>
+  <div class="wstep" data-s="0">
+    <h2>👋 Крок 1. Ключ перекладача Gemini</h2>
+    <p>Переклад робить Google Gemini — це безкоштовно. Потрібен ключ (1 хвилина):</p>
+    <ol>
+      <li>Відкрийте <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener"><b>aistudio.google.com/apikey</b></a> і увійдіть у свій Google-акаунт.</li>
+      <li>Натисніть <b>«Create API key»</b>, скопіюйте ключ і вставте нижче.</li>
+    </ol>
+    <div class="row"><input type="password" id="wKey" placeholder="AIza…" autocomplete="off"><button class="btn pri" id="wKeyTest">Перевірити</button></div>
+    <div class="msg" id="wKeyMsg"></div>
+    <p class="hint">Без ключа програма теж працює (резервний перекладач), але якість перекладу нижча.</p>
+  </div>
+  <div class="wstep" data-s="1">
+    <h2>🔊 Крок 2. Звідки брати звук</h2>
+    <p>Оберіть пристрій, через який ви чуєте Zoom. Зазвичай підходить перший варіант.</p>
+    <select id="wDevice"></select>
+    <div class="meter"><i id="wLevel"></i></div>
+    <p class="hint">Увімкніть будь-яке відео з англійською мовою — смужка має рухатися. Програма захоплює те, що <b>грає</b> цей пристрій.</p>
+  </div>
+  <div class="wstep" data-s="2">
+    <h2>🧪 Крок 3. Тест</h2>
+    <p>Натисніть кнопку — програма «прослухає» короткий англійський запис і покаже український переклад.</p>
+    <button class="btn yel" id="wTest">▶ Запустити тест</button>
+    <div class="preview" id="wPreview" style="margin-top:10px"></div>
+  </div>
+  <div class="wstep" data-s="3">
+    <h2>✅ Готово!</h2>
+    <p>Перед лекцією:</p>
+    <ol>
+      <li>Натисніть велику зелену кнопку <b>СТАРТ</b>.</li>
+      <li>Скопіюйте <b>повідомлення для чату</b> і вставте в чат Zoom.</li>
+      <li>(Необов’язково) підключіть вбудовані субтитри Zoom — інструкція в панелі.</li>
+    </ol>
+  </div>
+  <div class="wacts"><button class="btn" id="wBack">← Назад</button><button class="btn pri" id="wNext">Далі →</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var ST={status:null,config:{},pub:"",local:""};
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function toast(m,ms){var t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display="none"},ms||3000)}
+function api(path,body,method){
+  return fetch(path,{method:method||(body!==undefined?"POST":"GET"),headers:{"Content-Type":"application/json","X-Control":"1"},body:body!==undefined?JSON.stringify(body):undefined})
+    .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json()});
+}
+function copy(text){
+  if(navigator.clipboard){navigator.clipboard.writeText(text).then(function(){toast("Скопійовано ✓")},fb)}else fb();
+  function fb(){var ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");toast("Скопійовано ✓")}catch(e){}ta.remove()}
+}
+function chatMessage(url){
+  return "🇺🇦 Українські субтитри: 1) у Zoom натисніть «Субтитри / CC» внизу екрана, або 2) відкрийте посилання: "+url+" — нічого встановлювати не потрібно. Кнопка «Поверх Zoom» — субтитри поверх вікна Zoom.";
+}
+function participantHelp(url){
+  return "📖 Як користуватися: відкрийте посилання "+url+" → натисніть на субтитри, щоб побачити всю історію → ⚙ для налаштувань (розмір шрифту, кольори). На телефоні — кнопка «На весь екран».";
+}
+
+/* ---------------- devices */
+function loadDevices(){
+  return api("/api/devices").then(function(list){
+    [$("device"),$("wDevice")].forEach(function(sel){
+      sel.innerHTML=list.map(function(d){return '<option value="'+esc(d.id)+'">'+esc(d.name)+"</option>"}).join("");
+      sel.value=ST.config.audio_device||"default";if(!sel.value)sel.value="default";
+    });
+  }).catch(function(){});
+}
+function saveDevice(v){ST.config.audio_device=v;$("device").value=v;$("wDevice").value=v;api("/api/config",{audio_device:v})}
+$("device").onchange=function(){saveDevice(this.value);if(ST.status&&ST.status.running&&ST.status.mode==="live")start()};
+$("wDevice").onchange=function(){saveDevice(this.value)};
+$("refreshDev").onclick=loadDevices;
+
+/* ---------------- start / stop */
+function start(){$("bigBtn").disabled=true;return api("/api/start",{device:$("device").value}).catch(function(e){toast("Помилка: "+e.message)}).finally(function(){$("bigBtn").disabled=false})}
+function stop(){$("bigBtn").disabled=true;return api("/api/stop",{}).finally(function(){$("bigBtn").disabled=false})}
+$("bigBtn").onclick=function(){if(ST.status&&ST.status.running)stop();else start()};
+
+/* ---------------- tests */
+$("testSample").onclick=function(){api("/api/test",{}).then(function(){toast("Тест запущено — дивіться «Останні рядки»")})};
+$("testFile").onchange=function(){
+  var f=this.files[0];if(!f)return;var fd=new FormData();fd.append("file",f);
+  $("testInfo").textContent="Завантаження файлу…";
+  fetch("/api/upload",{method:"POST",body:fd,headers:{"X-Control":"1"}}).then(function(r){return r.json()}).then(function(j){
+    $("testInfo").textContent="Відтворення файлу в реальному часі: "+f.name;
+    return api("/api/test",{file:j.file});
+  }).catch(function(e){$("testInfo").textContent="Помилка: "+e.message});
+  this.value="";
+};
+
+/* ---------------- status rendering */
+var SL={ok:"ok",warn:"warn",error:"error",idle:"idle",off:"off",retrying:"warn"};
+function setDot(id,s){$(id).className="dot "+(SL[s]||"idle")}
+var lastPreviewSig="";
+function render(s){
+  ST.status=s;
+  var b=$("bigBtn");b.disabled=false;
+  if(s.running){b.textContent=s.mode==="test"?"■ ЗУПИНИТИ ТЕСТ":"■ СТОП";b.className="stop"}else{b.textContent="▶ СТАРТ";b.className=""}
+  $("ver").textContent="v"+s.version;
+  var lvl=Math.round(s.level*100)+"%";$("level").style.width=lvl;$("wLevel").style.width=lvl;
+  // audio
+  setDot("dAudio",s.audio.state);
+  $("tAudio").textContent=!s.running?"Не запущено — натисніть СТАРТ":
+    s.audio.error?s.audio.error:
+    (s.audio.state==="warn"?"⚠ Не знайдено звук — перевірте, що Zoom грає звук на цьому пристрої"+(s.audio.device?" ("+s.audio.device+")":""):
+    "Чути: "+s.audio.device);
+  // stt
+  setDot("dStt",s.stt.state);
+  var dev=s.stt.device==="cuda"?"GPU"+(s.stt.gpu?" · "+s.stt.gpu:""):s.stt.device==="cpu"?"CPU (повільніше)":s.stt.device;
+  $("tStt").textContent=s.stt.message||(s.stt.model?s.stt.model+" · "+dev:"Завантаження…");
+  // translator
+  setDot("dTr",s.translator.state);
+  $("tTr").textContent=s.translator.error?s.translator.error:(s.translator.provider?"Працює: "+s.translator.provider:(s.translator.has_gemini?"Gemini готовий":"Ключ Gemini не введено — працює резервний перекладач"));
+  if(!s.translator.has_gemini&&s.translator.state==="ok")$("dTr").className="dot warn";
+  // tunnel
+  setDot("dTun",s.tunnel.state);
+  $("tTun").textContent=s.tunnel.state==="ok"?"Активне":(s.tunnel.message||"")+(s.tunnel.state==="warn"&&s.tunnel.pct&&s.tunnel.pct<100?" "+s.tunnel.pct+"%":"");
+  if(s.tunnel.url!==ST.pub){ST.pub=s.tunnel.url;updateLink()}
+  // zoom
+  setDot("dZoom",s.zoom.configured?s.zoom.state:"off");
+  $("tZoom").textContent=!s.zoom.configured?"Не підключено (необов’язково)":
+    ("Надіслано: "+s.zoom.sent+(s.zoom.queued?" · у черзі "+s.zoom.queued:"")+(s.zoom.failed?" · пропущено "+s.zoom.failed:"")+(s.zoom.error?" · помилка: "+s.zoom.error:""));
+  // metrics
+  $("mDelay").textContent=s.delay.toFixed(1)+" с";$("mBacklog").textContent=s.backlog;$("mLines").textContent=s.lines;$("mViewers").textContent=s.viewers;
+  // test progress
+  if(s.test&&s.running){$("testProg").hidden=false;$("testProg").firstChild.style.width=Math.min(100,100*s.test.pos/Math.max(1,s.test.dur))+"%"}else $("testProg").hidden=true;
+  // warnings
+  var w=[];
+  if(s.stt.device==="cpu")w.push("⚠ Відеокарту NVIDIA не знайдено — розпізнавання працює на процесорі (модель "+s.stt.model+"). Можлива більша затримка.");
+  if(s.backlog>6)w.push("⏳ Накопичилась черга ("+s.backlog+"). Нічого не втрачається — переклад наздожене.");
+  $("warn").innerHTML=w.map(esc).join("<br>");
+  // preview
+  var pv=s.preview.slice(-5).map(function(p){return '<div class="pv"><div class="en">'+esc(p.en)+'</div><div class="uk">'+esc(p.uk)+"</div></div>"}).join("")+
+    s.pending_lines.map(function(p){return '<div class="pv pending"><div class="en">'+esc(p.en)+'</div><div class="uk">⏳ '+(p.status==="retrying"?"повтор: "+esc(p.err):"перекладаю…")+"</div></div>"}).join("")+
+    (s.partial?'<div class="pv pending"><div class="en">🎙 '+esc(s.partial)+"</div></div>":"");
+  var sig=pv;if(sig!==lastPreviewSig){lastPreviewSig=sig;
+    [$("preview"),$("wPreview")].forEach(function(el){el.innerHTML=pv||'<p class="hint">Тут з’являться англійський текст і український переклад.</p>';el.scrollTop=el.scrollHeight})}
+}
+function updateLink(){
+  var url=ST.pub;
+  $("pubUrl").textContent=url||"Створюється… (потрібен інтернет)";
+  $("chatText").value=chatMessage(url||ST.local);$("chatText2").value=participantHelp(url||ST.local);
+  if(url){$("qr").innerHTML='<img alt="QR" src="/api/qr.svg?url='+encodeURIComponent(url)+'">'}else $("qr").innerHTML="";
+}
+$("copyUrl").onclick=function(){if(ST.pub)copy(ST.pub);else toast("Посилання ще створюється…")};
+$("copyChat").onclick=function(){copy(chatMessage(ST.pub||ST.local))};
+
+/* ---------------- live status via websocket */
+function connectWS(){
+  var ws=new WebSocket("ws://"+location.host+"/ws/control");
+  ws.onmessage=function(e){try{render(JSON.parse(e.data))}catch(err){console.error(err)}};
+  ws.onclose=function(){$("tAudio").textContent="Немає зв’язку з програмою — вона запущена?";setTimeout(connectWS,1500)};
+}
+
+/* ---------------- config */
+function fillConfig(c){
+  ST.config=c;
+  $("zoomUrl").value=c.zoom_caption_url||"";$("zoomOn").checked=c.zoom_captions_enabled!==false;
+  $("hGemini").textContent=c.gemini_api_key_set?"(збережено "+c.gemini_api_key_hint+")":"";
+  $("hDeepl").textContent=c.deepl_api_key_set?"(збережено "+c.deepl_api_key_hint+")":"";
+  $("hDeepgram").textContent=c.deepgram_api_key_set?"(збережено "+c.deepgram_api_key_hint+")":"";
+  $("sttEngine").value=c.stt_engine||"whisper";$("whisperModel").value=c.whisper_model||"auto";
+  $("gModels").value=(c.gemini_models||[]).join(", ");$("gRpm").value=c.gemini_rpm;
+  $("freeFb").checked=!!c.free_fallback_translator;$("partials").checked=c.live_partials!==false;
+}
+$("saveKeys").onclick=function(){
+  var body={stt_engine:$("sttEngine").value,whisper_model:$("whisperModel").value,gemini_models:$("gModels").value,
+    gemini_rpm:Math.max(1,parseInt($("gRpm").value,10)||10),free_fallback_translator:$("freeFb").checked,live_partials:$("partials").checked};
+  if($("kGemini").value.trim())body.gemini_api_key=$("kGemini").value.trim();
+  if($("kDeepl").value.trim())body.deepl_api_key=$("kDeepl").value.trim();
+  if($("kDeepgram").value.trim())body.deepgram_api_key=$("kDeepgram").value.trim();
+  api("/api/config",body).then(function(j){fillConfig(j.config);["kGemini","kDeepl","kDeepgram"].forEach(function(id){$(id).value=""});
+    $("keysMsg").textContent="Збережено ✓";$("keysMsg").className="msg ok"}).catch(function(e){$("keysMsg").textContent=e.message;$("keysMsg").className="msg err"});
+};
+function testGemini(inputId,msgId){
+  var k=$(inputId).value.trim();var p=k?api("/api/config",{gemini_api_key:k}).then(function(j){fillConfig(j.config)}):Promise.resolve();
+  $(msgId).textContent="Перевіряю…";$(msgId).className="msg";
+  return p.then(function(){return api("/api/translator/test",{})}).then(function(j){$(msgId).textContent=j.message;$(msgId).className="msg "+(j.ok?"ok":"err");return j.ok});
+}
+$("testGemini").onclick=function(){testGemini("kGemini","geminiMsg")};
+$("zoomTest").onclick=function(){
+  $("zoomMsg").textContent="Надсилаю тестовий субтитр…";$("zoomMsg").className="msg";
+  api("/api/zoom/test",{url:$("zoomUrl").value}).then(function(j){$("zoomMsg").textContent=(j.ok?"✅ ":"❌ ")+j.message;$("zoomMsg").className="msg "+(j.ok?"ok":"err")});
+};
+$("zoomUrl").onchange=function(){api("/api/config",{zoom_caption_url:this.value})};
+$("zoomOn").onchange=function(){api("/api/config",{zoom_captions_enabled:this.checked})};
+
+/* ---------------- glossary */
+function glRow(en,uk){var tr=document.createElement("tr");
+  tr.innerHTML='<td><input type="text" class="gEn" placeholder="e.g. machine learning"></td><td><input type="text" class="gUk" placeholder="машинне навчання / (порожньо = англійською)"></td><td><button class="btn danger" title="Видалити">✕</button></td>';
+  tr.querySelector(".gEn").value=en||"";tr.querySelector(".gUk").value=uk||"";tr.querySelector("button").onclick=function(){tr.remove()};$("glBody").appendChild(tr)}
+function fillGlossary(g){$("glBody").innerHTML="";Object.keys(g).forEach(function(k){glRow(k,g[k]===k?"":g[k])});glRow("","")}
+$("glAdd").onclick=function(){glRow("","")};
+$("glSave").onclick=function(){
+  var items=[].map.call(document.querySelectorAll("#glBody tr"),function(tr){return [tr.querySelector(".gEn").value.trim(),tr.querySelector(".gUk").value.trim()]}).filter(function(r){return r[0]});
+  api("/api/glossary",{items:items}).then(function(j){fillGlossary(j.glossary);$("glMsg").textContent="Збережено ✓";$("glMsg").className="msg ok"});
+};
+
+/* ---------------- session */
+$("openFolder").onclick=function(){api("/api/open-folder",{}).then(function(j){toast(j.path)})};
+$("newSession").onclick=function(){
+  if(!confirm("Почати нову сесію? Історія на сторінці глядачів очиститься (файли збережуться)."))return;
+  api("/api/session/new",{}).then(function(j){$("sessMsg").textContent=j.ok?"Нову сесію розпочато ✓":j.message;$("sessMsg").className="msg "+(j.ok?"ok":"err")});
+};
+$("quit").onclick=function(){if(confirm("Вимкнути програму? Субтитри припиняться."))api("/api/shutdown",{}).then(function(){document.body.innerHTML="<h2 style='padding:30px'>Програму вимкнено. Це вікно можна закрити.</h2>"})};
+
+/* ---------------- wizard */
+var wStep=0;
+function showStep(i){wStep=i;[].forEach.call(document.querySelectorAll(".wstep"),function(e){e.classList.toggle("on",+e.dataset.s===i)});
+  [].forEach.call(document.querySelectorAll(".steps i"),function(e,k){e.classList.toggle("on",k<=i)});
+  $("wBack").style.visibility=i?"visible":"hidden";$("wNext").textContent=i===3?"Завершити ✓":"Далі →"}
+function openWizard(){$("wiz").classList.add("open");showStep(0)}
+$("wizOpen").onclick=openWizard;
+$("wKeyTest").onclick=function(){testGemini("wKey","wKeyMsg")};
+$("wBack").onclick=function(){showStep(Math.max(0,wStep-1))};
+$("wNext").onclick=function(){
+  if(wStep===0&&$("wKey").value.trim()){api("/api/config",{gemini_api_key:$("wKey").value.trim()}).then(function(j){fillConfig(j.config)})}
+  if(wStep===3){$("wiz").classList.remove("open");api("/api/config",{setup_done:true});return}
+  showStep(wStep+1);
+};
+$("wTest").onclick=function(){api("/api/test",{}).then(function(){toast("Тест запущено…")})};
+
+/* ---------------- boot */
+api("/api/state").then(function(j){
+  ST.local=j.local_url;$("localLink").href=j.local_url;
+  fillConfig(j.config);fillGlossary(j.glossary);render(j.status);updateLink();loadDevices();
+  if(!j.config.setup_done)openWizard();
+  connectWS();
+}).catch(function(e){document.body.insertAdjacentHTML("afterbegin","<div class='warnbox'>Не вдалося підключитися до програми: "+esc(e.message)+"</div>")});
+})();
+</script>
+</body>
+</html>

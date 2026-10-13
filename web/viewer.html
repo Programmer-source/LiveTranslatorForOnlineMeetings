@@ -1,1 +1,587 @@
-<html></html>
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#111418">
+<title>Українські субтитри — наживо</title>
+<link rel="icon" href="/favicon.ico">
+<style id="base-css">
+:root{
+  --fs:32; --fw:600; --fg:#ffffff; --sub-bg:rgba(0,0,0,.6); --scale:1;
+  --page:#0f1216; --panel:#181c22; --panel2:#20252d; --text:#e9edf2; --muted:#9aa4b2; --line:#2b313a;
+  --accent:#ffd500; --accent2:#2f7cf6; --ok:#2fbf71; --warn:#f0a500; --err:#e5484d;
+  --radius:14px;
+}
+:root[data-theme="light"]{
+  --page:#f3f5f8; --panel:#ffffff; --panel2:#eef1f5; --text:#14181d; --muted:#5d6876; --line:#d9dee5;
+}
+@media (max-width:640px){ :root{ --scale:.72; } }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--page);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,"Helvetica Neue",Arial,sans-serif;
+  -webkit-text-size-adjust:100%;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ---------------- top bar */
+#top{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;gap:8px;padding:10px 12px;
+  padding-top:max(10px,env(safe-area-inset-top));background:linear-gradient(var(--page),color-mix(in srgb,var(--page) 80%,transparent));flex-wrap:wrap}
+#status{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:var(--panel2);font-size:14px;font-weight:600;white-space:nowrap}
+#status i{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block}
+#status.live i{background:var(--err);animation:pulse 1.6s infinite}
+#status.reconnecting i{background:var(--warn)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(229,72,77,.6)}70%{box-shadow:0 0 0 9px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:9px 14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;min-height:42px}
+.btn:hover{border-color:var(--muted)}
+.btn.icon{padding:9px 12px;font-size:18px}
+#btnOverlay{background:var(--accent);color:#111;border-color:transparent;font-size:17px;padding:10px 18px;box-shadow:0 4px 18px rgba(255,213,0,.25)}
+#btnOverlay:hover{filter:brightness(1.05)}
+
+/* ---------------- subtitle stage */
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;padding:76px 16px 24px;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+#stage.pos-top{justify-content:flex-start}
+#stage.pos-center{justify-content:center}
+#stage.pos-bottom{justify-content:flex-end}
+.subs{cursor:pointer;margin:0 auto;width:min(1400px,100%);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;max-height:calc(100% - 8px);
+  background:var(--sub-bg);border-radius:var(--radius);padding:14px 22px;gap:.35em;
+  font-size:calc(var(--fs) * var(--scale) * 1px);font-weight:var(--fw);color:var(--fg);line-height:1.3;text-align:center;
+  text-shadow:0 1px 3px rgba(0,0,0,.55);-webkit-tap-highlight-color:transparent}
+.subs .ln{animation:rise .35s ease-out both;overflow-wrap:anywhere}
+.subs .ln.old{opacity:.72}
+.subs .en{display:block;font-size:.55em;font-weight:400;opacity:.8;margin-top:.1em}
+.subs .pending{opacity:.75;font-style:italic}
+.subs .mark{display:inline-block;font-size:.5em;font-style:normal;font-weight:600;vertical-align:middle;padding:.15em .55em;border-radius:999px;
+  background:rgba(255,255,255,.18);margin-left:.4em;letter-spacing:.02em}
+.subs .partial{font-size:.55em;font-weight:400;font-style:italic;opacity:.65}
+.subs .empty{font-size:.6em;font-weight:400;opacity:.8}
+@keyframes rise{from{opacity:0;transform:translateY(.5em)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.subs .ln{animation:none}}
+#tapHint{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+
+/* fullscreen subtitle mode */
+body.fs #top{display:none}
+body.fs #stage{padding:16px;background:#000}
+body.fs .subs{--scale:1.45;max-height:100%;width:100%;background:transparent;font-size:calc(var(--fs) * var(--scale) * 1px)}
+@media (max-width:640px){ body.fs .subs{--scale:1.05} }
+#fsExit{position:fixed;top:max(10px,env(safe-area-inset-top));right:10px;z-index:30;display:none;background:rgba(40,40,40,.7);color:#fff;border:0;border-radius:12px;padding:10px 14px;font-weight:600}
+body.fs #fsExit{display:block}
+
+/* ---------------- drawers (history / settings) */
+.drawer{position:fixed;z-index:40;inset:0;display:none;background:rgba(0,0,0,.45)}
+.drawer.open{display:flex;justify-content:flex-end}
+.drawer .sheet{background:var(--panel);width:min(760px,100%);height:100%;display:flex;flex-direction:column;box-shadow:-8px 0 40px rgba(0,0,0,.35);animation:slide .22s ease-out}
+@keyframes slide{from{transform:translateX(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;padding-top:max(12px,env(safe-area-inset-top))}
+.sheet header h2{font-size:18px;margin:0 auto 0 0}
+.sheet .tools{display:flex;gap:8px;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);align-items:center}
+.sheet .tools input[type=search]{flex:1 1 200px;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;padding:8px 12px;font-weight:600;font-size:14px}
+.seg button.on{background:var(--accent2);color:#fff}
+.sm{font-size:14px;padding:8px 12px;min-height:38px}
+#histList{flex:1;overflow:auto;padding:6px 14px 80px;-webkit-overflow-scrolling:touch;position:relative}
+.hrow{display:grid;grid-template-columns:72px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.hrow time{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;padding-top:2px}
+.hrow .t{display:grid;gap:12px}
+.bi .hrow .t{grid-template-columns:1fr 1fr}
+.hrow .en{color:var(--muted)}
+.hrow .wait{color:var(--warn);font-size:13px}
+@media (max-width:640px){ .bi .hrow .t{grid-template-columns:1fr;gap:4px} .hrow{grid-template-columns:58px 1fr} }
+mark{background:var(--accent);color:#111;border-radius:3px}
+#toNew{position:absolute;right:20px;bottom:20px;display:none;background:var(--accent2);color:#fff;border:0;border-radius:999px;padding:10px 16px;font-weight:700;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.hist-wrap{position:relative;flex:1;display:flex;flex-direction:column;min-height:0}
+#histEmpty{color:var(--muted);padding:24px 0;text-align:center}
+
+.form{overflow:auto;padding:14px;display:grid;gap:16px}
+.field{display:grid;gap:6px}
+.field>label,.field>.lbl{font-weight:600;font-size:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row input[type=range]{flex:1;min-width:140px}
+.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.preset{border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;background:var(--panel2)}
+.preset b{display:block}
+.preset span{font-size:12px;color:var(--muted)}
+.swatch{display:inline-block;padding:2px 8px;border-radius:6px;margin-top:6px;font-weight:700}
+input[type=color]{width:52px;height:38px;border:1px solid var(--line);border-radius:8px;background:transparent;padding:2px}
+select{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel2)}
+.switch{display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px}
+.switch input{width:20px;height:20px}
+
+/* ---------------- hint / toast / modal */
+#hint{position:fixed;z-index:35;left:50%;transform:translateX(-50%);top:72px;width:min(720px,calc(100% - 24px));display:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 44px 12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:15px}
+#hint.show{display:block}
+#hint button{position:absolute;top:6px;right:6px;border:0;background:transparent;font-size:20px;padding:6px 10px}
+#toast{position:fixed;z-index:60;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:12px;display:none;max-width:calc(100% - 24px);text-align:center}
+#modal{position:fixed;z-index:70;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:16px}
+#modal.open{display:flex}
+#modal .box{background:var(--panel);border-radius:16px;max-width:560px;width:100%;padding:18px;box-shadow:0 20px 50px rgba(0,0,0,.45)}
+#modal h3{margin:0 0 8px}
+#modal p{margin:8px 0;color:var(--text)}
+#modal .acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+
+/* ---------------- strip (popup fallback) mode */
+body.strip #top,body.strip #tapHint,body.strip #hint{display:none}
+body.strip{background:#000}
+body.strip #stage{padding:0}
+body.strip .subs{width:100%;height:100%;max-height:100%;border-radius:0;padding:8px 14px;--scale:1}
+@media (max-width:640px){ #top .lbl-long{display:none} #btnOverlay{font-size:15px;padding:9px 12px} }
+</style>
+<style id="overlay-css">
+/* shared by the Picture-in-Picture overlay and the popup strip */
+.ov-root{position:fixed;inset:0;display:flex;flex-direction:column;background:transparent;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.ov-root .subs{flex:1;width:100%;max-height:none;border-radius:0;margin:0;padding:8px 16px;--scale:1;cursor:default}
+.ov-ctl{position:absolute;top:6px;right:6px;display:flex;gap:6px;align-items:center;opacity:0;transition:opacity .2s;background:rgba(20,20,20,.85);padding:5px 6px;border-radius:10px;z-index:5}
+.ov-root:hover .ov-ctl,.ov-ctl:focus-within{opacity:1}
+.ov-ctl button{background:#333;color:#fff;border:0;border-radius:7px;padding:5px 9px;font-size:13px;font-weight:700;cursor:pointer;min-height:auto}
+.ov-ctl button:hover{background:#4a4a4a}
+.ov-ctl input{width:80px}
+.ov-hist{position:absolute;inset:0;background:#111;color:#eee;display:none;flex-direction:column;z-index:4}
+.ov-hist.open{display:flex}
+.ov-hist .bar{display:flex;gap:6px;padding:6px;border-bottom:1px solid #333}
+.ov-hist input{flex:1;background:#222;border:1px solid #444;color:#fff;border-radius:6px;padding:5px 8px}
+.ov-hist .bar button{background:#333;color:#fff;border:0;border-radius:6px;padding:5px 10px;cursor:pointer}
+.ov-hist .list{flex:1;overflow:auto;padding:6px 10px;font-size:15px}
+.ov-hist .it{padding:5px 0;border-bottom:1px solid #2a2a2a}
+.ov-hist .it time{color:#999;font-size:12px;margin-right:6px}
+.ov-hist .it .en{color:#9a9a9a;display:block;font-size:13px}
+</style>
+</head>
+<body>
+<div id="top" role="toolbar" aria-label="Керування субтитрами">
+  <span id="status" class="idle" role="status" aria-live="polite"><i></i><span id="statusText">Підключення…</span></span>
+  <span class="spacer"></span>
+  <button id="btnOverlay" class="btn" title="Відкрити плаваюче вікно субтитрів поверх Zoom">📺 Поверх Zoom</button>
+  <button id="btnFs" class="btn" title="Великі субтитри на весь екран">⛶ <span class="lbl-long">На весь екран</span></button>
+  <button id="btnHist" class="btn" title="Уся історія">📜 <span class="lbl-long">Історія</span></button>
+  <button id="btnSet" class="btn icon" title="Налаштування" aria-label="Налаштування">⚙</button>
+</div>
+
+<div id="hint" role="note"><span>💡 Натисніть «Поверх Zoom», щоб субтитри плавали над вікном Zoom · Натисніть на субтитри — побачите всю історію · ⚙ — налаштування</span><button id="hintClose" aria-label="Закрити підказку">✕</button></div>
+
+<main id="stage" class="pos-bottom">
+  <div id="subs" class="subs" role="log" aria-live="polite" aria-label="Субтитри" title="Натисніть, щоб побачити всю історію"></div>
+  <div id="tapHint">Натисніть на субтитри, щоб побачити всю історію</div>
+</main>
+<button id="fsExit">✕ Вийти</button>
+
+<section id="hist" class="drawer" aria-label="Історія">
+  <div class="sheet">
+    <header><h2>📜 Уся історія</h2><button class="btn sm" data-close>✕ Закрити</button></header>
+    <div class="tools">
+      <input id="q" type="search" placeholder="🔍 Пошук…" aria-label="Пошук в історії">
+      <span class="seg" role="group" aria-label="Мова"><button id="modeUk" class="on">Лише UA</button><button id="modeBi">EN + UA</button></span>
+    </div>
+    <div class="tools">
+      <button id="copyAll" class="btn sm">📋 Копіювати все</button>
+      <button id="dlTxt" class="btn sm">⬇ .txt</button>
+      <button id="dlSrt" class="btn sm">⬇ .srt</button>
+      <span id="histCount" style="color:var(--muted);font-size:13px;margin-left:auto"></span>
+    </div>
+    <div class="hist-wrap">
+      <div id="histList"><div id="histEmpty">Поки що порожньо.</div></div>
+      <button id="toNew">↓ до нових</button>
+    </div>
+  </div>
+</section>
+
+<section id="settings" class="drawer" aria-label="Налаштування">
+  <div class="sheet">
+    <header><h2>⚙ Налаштування</h2><button class="btn sm" data-close>✕ Закрити</button></header>
+    <div class="form">
+      <div class="field"><span class="lbl">Швидкі пресети</span>
+        <div class="presets">
+          <button class="preset" data-preset="cinema"><b>🎬 Кіно</b><span>білий текст, темна смуга, 2 рядки</span></button>
+          <button class="preset" data-preset="big"><b>🔠 Великий шрифт</b><span>для поганого зору / телефона</span></button>
+          <button class="preset" data-preset="contrast"><b>🟨 Контрастний</b><span class="swatch" style="background:#000;color:#ffe600">жовтий на чорному</span></button>
+          <button class="preset" data-preset="minimal"><b>✨ Мінімал</b><span>1 рядок, майже прозорий фон</span></button>
+        </div>
+      </div>
+      <div class="field"><label for="sFs">Розмір шрифту: <span id="vFs"></span></label>
+        <div class="row"><button class="btn sm" data-step="-2">A−</button><input id="sFs" type="range" min="14" max="96" step="1"><button class="btn sm" data-step="2">A+</button></div></div>
+      <div class="field"><label for="sFw">Товщина шрифту</label>
+        <select id="sFw"><option value="400">Звичайний</option><option value="500">Середній</option><option value="600">Напівжирний</option><option value="700">Жирний</option><option value="800">Дуже жирний</option></select></div>
+      <div class="field"><span class="lbl">Кольори</span>
+        <div class="row"><label class="row">Текст <input id="sFg" type="color"></label><label class="row">Фон <input id="sBg" type="color"></label></div></div>
+      <div class="field"><label for="sOp">Непрозорість фону: <span id="vOp"></span></label><input id="sOp" type="range" min="0" max="100" step="1"></div>
+      <div class="field"><label for="sLines">Кількість рядків на екрані</label>
+        <select id="sLines"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></div>
+      <div class="field"><span class="lbl">Положення</span>
+        <span class="seg" id="sPos"><button data-v="top">Вгорі</button><button data-v="center">По центру</button><button data-v="bottom">Внизу</button></span></div>
+      <label class="switch"><input id="sEn" type="checkbox"> Показувати англійський оригінал під кожним рядком</label>
+      <label class="switch"><input id="sPartial" type="checkbox"> Показувати англійський текст, поки готується переклад</label>
+      <div class="field"><span class="lbl">Тема сторінки</span>
+        <span class="seg" id="sTheme"><button data-v="dark">🌙 Темна</button><button data-v="light">☀ Світла</button></span></div>
+      <div><button id="sReset" class="btn sm">↺ Скинути налаштування</button></div>
+    </div>
+  </div>
+</section>
+
+<div id="modal" role="dialog" aria-modal="true"><div class="box"><h3 id="mTitle"></h3><div id="mBody"></div><div class="acts" id="mActs"></div></div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var params=new URLSearchParams(location.search);
+var STRIP=params.get("mode")==="strip";
+
+/* ------------------------------------------------------------ storage (always guarded) */
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+/* ------------------------------------------------------------ settings */
+var DEFAULTS={fs:32,fw:600,fg:"#ffffff",bg:"#000000",op:60,lines:2,pos:"bottom",en:false,partial:true,theme:"dark"};
+var PRESETS={
+  cinema:{fs:34,fw:600,fg:"#ffffff",bg:"#000000",op:62,lines:2,pos:"bottom",en:false},
+  big:{fs:56,fw:700,fg:"#ffffff",bg:"#000000",op:78,lines:2},
+  contrast:{fs:40,fw:700,fg:"#ffe600",bg:"#000000",op:100,lines:2},
+  minimal:{fs:30,fw:500,fg:"#ffffff",bg:"#000000",op:22,lines:1,en:false}
+};
+var S=Object.assign({},DEFAULTS,lsGet("uasubs.settings",{}));
+function saveS(){lsSet("uasubs.settings",S)}
+function hexToRgba(h,a){h=String(h||"#000").replace("#","");if(h.length===3)h=h.replace(/./g,"$&$&");var n=parseInt(h,16)||0;return "rgba("+(n>>16&255)+","+(n>>8&255)+","+(n&255)+","+a+")"}
+function applyVars(doc){
+  var r=doc.documentElement.style;
+  r.setProperty("--fs",S.fs);r.setProperty("--fw",S.fw);r.setProperty("--fg",S.fg);
+  r.setProperty("--sub-bg",hexToRgba(S.bg,S.op/100));
+}
+function applySettings(){
+  applyVars(document);
+  document.documentElement.setAttribute("data-theme",S.theme);
+  $("stage").className="pos-"+S.pos;
+  $("sFs").value=S.fs;$("vFs").textContent=S.fs+" px";$("sFw").value=String(S.fw);
+  $("sFg").value=S.fg;$("sBg").value=S.bg;$("sOp").value=S.op;$("vOp").textContent=S.op+"%";
+  $("sLines").value=String(S.lines);$("sEn").checked=!!S.en;$("sPartial").checked=!!S.partial;
+  [].forEach.call($("sPos").children,function(b){b.classList.toggle("on",b.dataset.v===S.pos)});
+  [].forEach.call($("sTheme").children,function(b){b.classList.toggle("on",b.dataset.v===S.theme)});
+  if(pip)applyVars(pip.document);
+  renderAll(true);
+}
+function setS(patch){Object.assign(S,patch);saveS();applySettings()}
+
+/* ------------------------------------------------------------ state */
+var lines=[];          // index = line id
+var session=null, lastEv=-1, startedAt=0, srvState="idle", partial={text:"",upto:-1};
+var connected=false;
+
+/* ------------------------------------------------------------ helpers */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function pad(n){return (n<10?"0":"")+n}
+function clock(t0){ // local wall-clock time of the line
+  if(startedAt){var d=new Date((startedAt+t0)*1000);return pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds())}
+  return rel(t0)}
+function rel(t){t=Math.max(0,Math.floor(t));return pad(Math.floor(t/3600))+":"+pad(Math.floor(t/60)%60)+":"+pad(t%60)}
+function srtTime(t){t=Math.max(0,t);var ms=Math.round(t*1000);var h=Math.floor(ms/3600000);ms-=h*3600000;var m=Math.floor(ms/60000);ms-=m*60000;var s=Math.floor(ms/1000);ms-=s*1000;
+  return pad(h)+":"+pad(m)+":"+pad(s)+","+("00"+ms).slice(-3)}
+function toast(msg,ms){var t=$("toast");t.textContent=msg;t.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(function(){t.style.display="none"},ms||3500)}
+
+/* ------------------------------------------------------------ subtitles rendering */
+function subsHTMLParts(){
+  var n=Math.max(1,Math.min(5,+S.lines||2));
+  var shown=lines.slice(-n);
+  return shown;
+}
+function lineEl(doc,l,isOld){
+  var el=doc.createElement("div");el.className="ln"+(isOld?" old":"");el.dataset.id=l.id;
+  fillLine(el,l);return el;
+}
+function fillLine(el,l){
+  var sig=(l.uk||"")+"|"+l.status+"|"+(S.en?1:0);
+  if(el._sig===sig)return;el._sig=sig;
+  if(l.uk){
+    el.innerHTML=esc(l.uk)+(S.en?'<span class="en">'+esc(l.en)+"</span>":"");
+  }else{
+    el.innerHTML='<span class="pending">'+esc(l.en)+'</span><span class="mark">'+(l.status==="retrying"?"⏳ повтор перекладу…":"⏳ перекладаю…")+"</span>";
+  }
+}
+function renderSubs(box,doc){
+  var shown=subsHTMLParts();
+  var showPartial=S.partial&&partial.text&&partial.upto>=lines.length-1;
+  if(!shown.length&&!showPartial){
+    var msg=srvState==="live"?"Слухаємо… субтитри з’являться, щойно лектор почне говорити.":
+      (connected?"Лекція ще не почалась. Субтитри з’являться тут автоматично.":"Підключення…");
+    if(box._empty!==msg){box.innerHTML='<div class="ln empty">'+esc(msg)+"</div>";box._empty=msg}
+    return;
+  }
+  if(box._empty){box.innerHTML="";box._empty=null}
+  var want={};shown.forEach(function(l){want[l.id]=1});
+  [].slice.call(box.querySelectorAll(".ln")).forEach(function(el){if(!want[el.dataset.id])el.remove()});
+  var pEl=box.querySelector(".partial");
+  shown.forEach(function(l,i){
+    var el=box.querySelector('.ln[data-id="'+l.id+'"]');
+    if(!el){el=lineEl(doc,l,false);box.insertBefore(el,pEl)}else fillLine(el,l);
+    el.classList.toggle("old",i<shown.length-1);
+  });
+  if(showPartial){
+    if(!pEl){pEl=doc.createElement("div");pEl.className="partial";box.appendChild(pEl)}
+    var txt="🎙 "+partial.text;if(pEl.textContent!==txt)pEl.textContent=txt;
+  }else if(pEl)pEl.remove();
+}
+var rafPending=false;
+function renderAll(force){
+  if(force){$("subs")._empty=undefined;[].forEach.call($("subs").querySelectorAll(".ln"),function(e){e._sig=null})}
+  if(rafPending)return;rafPending=true;
+  requestAnimationFrame(function(){rafPending=false;
+    renderSubs($("subs"),document);
+    if(pip&&pip.document){var b=pip.document.getElementById("ovSubs");if(b){if(force)[].forEach.call(b.querySelectorAll(".ln"),function(e){e._sig=null});renderSubs(b,pip.document)}
+      if(pip._histOpen)renderOvHist(pip.document)}
+    if(STRIP&&window._histOpen)renderOvHist(document);
+    if($("hist").classList.contains("open"))renderHistory();
+  });
+}
+
+/* ------------------------------------------------------------ history */
+var histMode=lsGet("uasubs.histMode","uk");
+var histRendered={count:-1,q:null,mode:null,sig:""};
+function hl(text,q){var e=esc(text);if(!q)return e;var re=new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");return e.replace(re,"<mark>$1</mark>")}
+function matches(l,q){if(!q)return true;q=q.toLowerCase();return (l.uk||"").toLowerCase().indexOf(q)>=0||(l.en||"").toLowerCase().indexOf(q)>=0}
+function rowHTML(l,q){
+  var uk=l.uk?hl(l.uk,q):'<span class="wait">⏳ перекладаю… </span><span class="en">'+hl(l.en,q)+"</span>";
+  var t=histMode==="bi"?'<div class="t"><div class="en">'+hl(l.en,q)+"</div><div>"+(l.uk?hl(l.uk,q):'<span class="wait">⏳ перекладаю…</span>')+"</div></div>":'<div class="t"><div>'+uk+"</div></div>";
+  return '<div class="hrow" data-id="'+l.id+'"><time>'+clock(l.t0)+"</time>"+t+"</div>";
+}
+function renderHistory(){
+  var list=$("histList"),q=$("q").value.trim();
+  var nearBottom=list.scrollHeight-list.scrollTop-list.clientHeight<80;
+  $("hist").querySelector(".sheet").classList.toggle("bi",histMode==="bi");
+  var lastSig=lines.length?lines[lines.length-1].status+(lines[lines.length-1].uk||""):"";
+  var full=histRendered.q!==q||histRendered.mode!==histMode;
+  if(full){
+    var h=lines.filter(function(l){return matches(l,q)}).map(function(l){return rowHTML(l,q)}).join("");
+    list.innerHTML=h||'<div id="histEmpty">'+(q?"Нічого не знайдено.":"Поки що порожньо.")+"</div>";
+  }else{
+    // incremental: update changed rows + append new ones
+    for(var i=Math.max(0,histRendered.count-3);i<lines.length;i++){
+      var l=lines[i];var row=list.querySelector('.hrow[data-id="'+l.id+'"]');
+      if(!matches(l,q)){if(row)row.remove();continue}
+      var html=rowHTML(l,q);
+      if(row){if(row._h!==html){row.outerHTML=html}}
+      else{var em=list.querySelector("#histEmpty");if(em)em.remove();list.insertAdjacentHTML("beforeend",html)}
+    }
+  }
+  histRendered={count:lines.length,q:q,mode:histMode,sig:lastSig};
+  [].forEach.call(list.querySelectorAll(".hrow"),function(r){r._h=r.outerHTML});
+  $("histCount").textContent=lines.length+" рядків";
+  if(full&&!q&&histRendered._first!==true){list.scrollTop=list.scrollHeight}
+  else if(nearBottom&&!q){list.scrollTop=list.scrollHeight}
+  updateToNew();
+}
+function updateToNew(){var list=$("histList");var far=list.scrollHeight-list.scrollTop-list.clientHeight>120;$("toNew").style.display=far?"block":"none"}
+function openHistory(){$("hist").classList.add("open");histRendered={count:-1,q:null,mode:null};renderHistory();var l=$("histList");l.scrollTop=l.scrollHeight;updateToNew()}
+
+function plainText(bi){
+  return lines.map(function(l){var t="["+clock(l.t0)+"] ";
+    return bi?t+"\nEN: "+l.en+"\nUA: "+(l.uk||"(перекладається…)")+"\n":t+(l.uk||("(перекладається…) "+l.en))}).join(bi?"\n":"\n")+"\n";
+}
+function buildSrt(){var n=0;return lines.filter(function(l){return l.uk}).map(function(l){n++;var t1=l.t1>l.t0?l.t1:l.t0+1;
+  return n+"\n"+srtTime(l.t0)+" --> "+srtTime(t1)+"\n"+l.uk+"\n"}).join("\n")}
+function download(name,text,type){
+  try{var blob=new Blob(["﻿"+text],{type:type||"text/plain;charset=utf-8"});var a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1500)}catch(e){toast("Не вдалося завантажити файл")}
+}
+function copyText(text){
+  function fallback(){var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();
+    var ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?"Скопійовано ✓":"Не вдалося скопіювати")}
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(text).then(function(){toast("Скопійовано ✓")},fallback)}else fallback();
+}
+function fileStamp(){var d=startedAt?new Date(startedAt*1000):new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())+"_"+pad(d.getHours())+"-"+pad(d.getMinutes())}
+
+/* ------------------------------------------------------------ websocket */
+var ws=null,retry=0,lastMsgAt=0,pingTimer=null;
+function setStatus(){
+  var st=$("status"),tx=$("statusText");
+  if(!connected){st.className="reconnecting";tx.textContent="Перепідключення…"}
+  else if(srvState==="live"){st.className="live";tx.textContent="Наживо"}
+  else if(srvState==="stopped"){st.className="idle";tx.textContent="Трансляцію призупинено"}
+  else{st.className="idle";tx.textContent="Лекція ще не почалась"}
+  if(pip&&pip.document){var p=pip.document.getElementById("ovState");if(p)p.textContent=connected?"":"⟳"}
+}
+function applyLine(l){lines[l.id]=l}
+function onMsg(m){
+  lastMsgAt=Date.now();
+  if(m.type==="status"){srvState=m.state;if(m.started_at)startedAt=m.started_at;setStatus();renderAll();return}
+  if(m.type==="snapshot"){session=m.session;startedAt=m.started_at||startedAt;lines=m.lines.slice();lastEv=m.ev;histRendered={count:-1};renderAll(true);return}
+  if(m.type==="replay"){m.events.forEach(function(e){applyLine(e.line)});lastEv=m.ev;renderAll();return}
+  if(m.type==="ev"){
+    if(m.ev<=lastEv)return; // duplicate
+    if(m.ev!==lastEv+1){hello();return} // gap -> ask server to replay
+    applyLine(m.line);lastEv=m.ev;renderAll();return}
+  if(m.type==="partial"){partial=m;renderAll();return}
+}
+function hello(){try{ws.send(JSON.stringify({type:"hello",session:session,last_ev:lastEv}))}catch(e){}}
+function connect(){
+  var url=(location.protocol==="https:"?"wss://":"ws://")+location.host+"/ws";
+  try{ws=new WebSocket(url)}catch(e){return scheduleReconnect()}
+  ws.onopen=function(){connected=true;retry=0;lastMsgAt=Date.now();hello();setStatus();renderAll()};
+  ws.onmessage=function(ev){try{onMsg(JSON.parse(ev.data))}catch(e){}};
+  ws.onclose=function(){if(connected){connected=false;setStatus();renderAll()}scheduleReconnect()};
+  ws.onerror=function(){try{ws.close()}catch(e){}};
+}
+function scheduleReconnect(){connected=false;setStatus();ws=null;var d=Math.min(5000,400*Math.pow(1.6,retry++));setTimeout(connect,d)}
+setInterval(function(){
+  if(ws&&ws.readyState===1){try{ws.send('{"type":"ping"}')}catch(e){}
+    if(Date.now()-lastMsgAt>45000){try{ws.close()}catch(e){}}}
+},15000);
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&(!ws||ws.readyState>1)){connect()}});
+window.addEventListener("online",function(){if(!ws||ws.readyState>1)connect()});
+
+/* ------------------------------------------------------------ overlay (Document PiP) */
+var pip=null;
+function overlayMarkup(){
+  return '<div class="ov-root" id="ovRoot"><div class="subs" id="ovSubs"></div>'+
+   '<div class="ov-ctl"><span id="ovState" style="color:#fc0;font-weight:700"></span>'+
+   '<button id="ovMinus" title="Менший шрифт">A−</button><button id="ovPlus" title="Більший шрифт">A+</button>'+
+   '<input id="ovOp" type="range" min="0" max="100" title="Непрозорість фону">'+
+   '<button id="ovHist" title="Історія">📜</button><button id="ovClose" title="Закрити">✕</button></div>'+
+   '<div class="ov-hist" id="ovHistBox"><div class="bar"><input id="ovQ" type="search" placeholder="Пошук…"><button id="ovBack">✕ Назад</button></div><div class="list" id="ovList"></div></div></div>';
+}
+function wireOverlay(doc,win,onClose){
+  doc.getElementById("ovMinus").onclick=function(){setS({fs:Math.max(14,S.fs-2)})};
+  doc.getElementById("ovPlus").onclick=function(){setS({fs:Math.min(120,S.fs+2)})};
+  var op=doc.getElementById("ovOp");op.value=S.op;op.oninput=function(){setS({op:+op.value})};
+  doc.getElementById("ovClose").onclick=onClose;
+  doc.getElementById("ovHist").onclick=function(){
+    win._histOpen=true;doc.getElementById("ovHistBox").classList.add("open");
+    try{if(win.outerHeight<380)win.resizeTo(Math.max(win.outerWidth,640),460)}catch(e){}
+    renderOvHist(doc,true)};
+  doc.getElementById("ovBack").onclick=function(){win._histOpen=false;doc.getElementById("ovHistBox").classList.remove("open")};
+  doc.getElementById("ovQ").oninput=function(){renderOvHist(doc,true)};
+}
+function renderOvHist(doc,force){
+  var list=doc.getElementById("ovList");if(!list)return;var q=doc.getElementById("ovQ").value.trim();
+  var near=list.scrollHeight-list.scrollTop-list.clientHeight<60;
+  list.innerHTML=lines.filter(function(l){return matches(l,q)}).map(function(l){
+    return '<div class="it"><time>'+clock(l.t0)+"</time>"+(l.uk?hl(l.uk,q):"⏳ "+hl(l.en,q))+(S.en&&l.uk?'<span class="en">'+hl(l.en,q)+"</span>":"")+"</div>"}).join("");
+  if(near||force)list.scrollTop=list.scrollHeight;
+}
+function copyStyles(doc){
+  ["base-css","overlay-css"].forEach(function(id){var s=doc.createElement("style");s.textContent=$(id).textContent;doc.head.appendChild(s)});
+}
+async function openPip(){
+  try{
+    pip=await window.documentPictureInPicture.requestWindow({width:Math.min(1000,screen.availWidth-40),height:Math.max(130,Math.round(S.fs*(+S.lines||2)*1.45+40))});
+  }catch(e){pip=null;toast("Не вдалося відкрити плаваюче вікно: "+(e&&e.message||e));return}
+  var d=pip.document;d.title="Субтитри UA";copyStyles(d);
+  d.body.style.margin="0";d.body.style.background="transparent";d.body.innerHTML=overlayMarkup();
+  applyVars(d);
+  wireOverlay(d,pip,function(){pip.close()});
+  pip.addEventListener("pagehide",function(){pip=null;$("btnOverlay").textContent="📺 Поверх Zoom"});
+  $("btnOverlay").textContent="📺 Оверлей відкрито";
+  renderAll(true);
+  toast("Перетягніть вікно субтитрів униз вікна Zoom. Розмір можна змінювати за край.",6000);
+}
+function openPopup(){
+  var w=Math.min(1000,screen.availWidth-40),h=170;
+  var win=window.open(location.pathname+"?mode=strip","uasubs_strip","popup=yes,width="+w+",height="+h+",left="+Math.round((screen.availWidth-w)/2)+",top="+(screen.availHeight-h-80));
+  if(!win){showModal("Дозвольте спливаючі вікна","<p>Браузер заблокував вікно субтитрів. Дозвольте спливаючі вікна для цього сайту (значок у рядку адреси) і натисніть ще раз.</p>",[{t:"Добре"}]);return}
+  showModal("Окреме вікно субтитрів відкрито",
+    "<p>Розмістіть це невелике вікно під вікном Zoom (або над нижньою частиною екрана).</p>"+
+    "<p>⚠ Чесно: у цьому браузері воно <b>не може завжди бути поверх</b> інших вікон — якщо клацнути в Zoom, воно може сховатись. Повноцінне «поверх Zoom» працює в <b>Google Chrome</b> або <b>Microsoft Edge</b> на комп’ютері.</p>"+
+    "<p>💡 Альтернатива: <b>розділений екран</b> — Zoom ліворуч, ця сторінка праворуч (Win + ← / Win + →).</p>",[{t:"Зрозуміло"}]);
+}
+function isPhone(){return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&screen.width<900)}
+function overlayClick(){
+  if(pip){try{pip.focus()}catch(e){}return}
+  if("documentPictureInPicture" in window){openPip();return}
+  if(isPhone()){
+    showModal("Субтитри на телефоні",
+      "<p>На телефоні вікно не може плавати поверх застосунку Zoom.</p>"+
+      "<p>📱 <b>Найзручніше:</b> поставте телефон поруч із комп’ютером як другий екран і натисніть «На весь екран» — субтитри будуть великими.</p>"+
+      "<p>Якщо Zoom і субтитри на одному телефоні — використовуйте режим розділеного екрана / «картинка в картинці» для Zoom.</p>",
+      [{t:"⛶ На весь екран",primary:true,fn:enterFs},{t:"Закрити"}]);
+    return;
+  }
+  openPopup();
+}
+
+/* ------------------------------------------------------------ fullscreen */
+var wakeLock=null;
+function enterFs(){
+  document.body.classList.add("fs");
+  var el=document.documentElement;
+  try{(el.requestFullscreen||el.webkitRequestFullscreen||function(){}).call(el)}catch(e){}
+  try{if(navigator.wakeLock)navigator.wakeLock.request("screen").then(function(w){wakeLock=w}).catch(function(){})}catch(e){}
+  renderAll(true);
+}
+function exitFs(){
+  document.body.classList.remove("fs");
+  try{if(document.fullscreenElement)document.exitFullscreen();else if(document.webkitFullscreenElement)document.webkitExitFullscreen()}catch(e){}
+  try{if(wakeLock)wakeLock.release()}catch(e){}wakeLock=null;renderAll(true);
+}
+document.addEventListener("fullscreenchange",function(){if(!document.fullscreenElement&&document.body.classList.contains("fs"))exitFs()});
+
+/* ------------------------------------------------------------ modal */
+function showModal(title,html,acts){
+  $("mTitle").textContent=title;$("mBody").innerHTML=html;var a=$("mActs");a.innerHTML="";
+  (acts||[{t:"OK"}]).forEach(function(x){var b=document.createElement("button");b.className="btn";b.textContent=x.t;
+    if(x.primary){b.style.background="var(--accent)";b.style.color="#111"}
+    b.onclick=function(){$("modal").classList.remove("open");if(x.fn)x.fn()};a.appendChild(b)});
+  $("modal").classList.add("open");
+}
+$("modal").addEventListener("click",function(e){if(e.target===$("modal"))$("modal").classList.remove("open")});
+
+/* ------------------------------------------------------------ UI wiring */
+if(STRIP){
+  document.body.classList.add("strip");
+  document.title="Субтитри UA";
+  // reuse the overlay layout inside the popup
+  $("stage").innerHTML=overlayMarkup();
+  var ovSubs=document.getElementById("ovSubs");ovSubs.id="subs";
+  pip=null;
+  wireOverlay(document,window,function(){window.close()});
+  window.renderOvHistLocal=true;
+}
+$("btnOverlay").onclick=overlayClick;
+$("btnFs").onclick=enterFs;$("fsExit").onclick=exitFs;
+$("btnHist").onclick=openHistory;
+$("btnSet").onclick=function(){$("settings").classList.add("open")};
+if(!STRIP)$("subs").addEventListener("click",openHistory);
+[].forEach.call(document.querySelectorAll("[data-close]"),function(b){b.onclick=function(){b.closest(".drawer").classList.remove("open")}});
+[].forEach.call(document.querySelectorAll(".drawer"),function(d){d.addEventListener("click",function(e){if(e.target===d)d.classList.remove("open")})});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"){[].forEach.call(document.querySelectorAll(".drawer.open"),function(d){d.classList.remove("open")});$("modal").classList.remove("open")}});
+
+$("q").addEventListener("input",function(){renderHistory()});
+function setHistMode(m){histMode=m;lsSet("uasubs.histMode",m);$("modeUk").classList.toggle("on",m==="uk");$("modeBi").classList.toggle("on",m==="bi");renderHistory()}
+$("modeUk").onclick=function(){setHistMode("uk")};$("modeBi").onclick=function(){setHistMode("bi")};
+$("histList").addEventListener("scroll",updateToNew,{passive:true});
+$("toNew").onclick=function(){var l=$("histList");l.scrollTop=l.scrollHeight;updateToNew()};
+$("copyAll").onclick=function(){copyText(plainText(histMode==="bi"))};
+$("dlTxt").onclick=function(){download("subtitles_uk_"+fileStamp()+".txt",plainText(histMode==="bi"))};
+$("dlSrt").onclick=function(){download("subtitles_uk_"+fileStamp()+".srt",buildSrt(),"application/x-subrip;charset=utf-8")};
+
+$("sFs").oninput=function(){setS({fs:+this.value})};
+[].forEach.call(document.querySelectorAll("[data-step]"),function(b){b.onclick=function(){setS({fs:Math.max(14,Math.min(120,S.fs+ +b.dataset.step))})}});
+$("sFw").onchange=function(){setS({fw:+this.value})};
+$("sFg").oninput=function(){setS({fg:this.value})};
+$("sBg").oninput=function(){setS({bg:this.value})};
+$("sOp").oninput=function(){setS({op:+this.value})};
+$("sLines").onchange=function(){setS({lines:+this.value})};
+$("sEn").onchange=function(){setS({en:this.checked})};
+$("sPartial").onchange=function(){setS({partial:this.checked})};
+[].forEach.call($("sPos").children,function(b){b.onclick=function(){setS({pos:b.dataset.v})}});
+[].forEach.call($("sTheme").children,function(b){b.onclick=function(){setS({theme:b.dataset.v})}});
+[].forEach.call(document.querySelectorAll("[data-preset]"),function(b){b.onclick=function(){setS(PRESETS[b.dataset.preset]);toast("Пресет застосовано ✓")}});
+$("sReset").onclick=function(){S=Object.assign({},DEFAULTS);saveS();applySettings()};
+
+// first-visit hint (once)
+if(!STRIP&&!lsGet("uasubs.hintDismissed",false)){$("hint").classList.add("show")}
+$("hintClose").onclick=function(){$("hint").classList.remove("show");lsSet("uasubs.hintDismissed",true)};
+
+// keep popup/PiP in sync with settings changed in another tab/window
+window.addEventListener("storage",function(e){if(e.key==="uasubs.settings"){S=Object.assign({},DEFAULTS,lsGet("uasubs.settings",{}));applySettings()}});
+
+setHistMode(histMode);
+applySettings();
+setStatus();
+connect();
+})();
+</script>
+</body>
+</html>

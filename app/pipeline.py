@@ -324,10 +324,10 @@ class Pipeline:
             results = await self.translator.translate(items, ctx, on_retry=on_retry)
             now = time.time()
             for b, en, uk in zip(batch, items, results):
-                line = self.hub.set_translation(b["id"], uk, self.translator.last_provider)
+                lat = now - b["speech_end"]
+                line = self.hub.set_translation(b["id"], uk, self.translator.last_provider, lat)
                 self.ctx_pairs.append((en, uk))
                 self.untranslated -= 1
-                lat = now - b["speech_end"]
                 self.latencies.append(lat)
                 self.all_latencies.append(lat)
                 self.preview.append({"id": line["id"], "en": en, "uk": uk})

@@ -1,0 +1,15 @@
+# Core (tested versions)
+faster-whisper==1.2.1
+ctranslate2==4.8.3
+onnxruntime==1.31.0
+av==19.0.1
+huggingface-hub==2.2.0
+fastapi==0.143.0
+uvicorn==0.54.0
+websockets==17.2
+httpx==0.28.1
+numpy==2.5.4
+PyAudioWPatch==0.2.12.9
+soxr==1.1.0
+qrcode==8.2
+python-multipart==0.0.32
