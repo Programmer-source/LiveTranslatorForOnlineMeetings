@@ -1,0 +1,9 @@
+.runtime/
+__pycache__/
+*.pyc
+config.json
+transcripts/
+logs/
+.pytest_cache/
+dist/
+build/

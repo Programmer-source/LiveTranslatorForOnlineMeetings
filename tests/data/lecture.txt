@@ -1,0 +1,15 @@
+Good afternoon, everyone. Thank you for joining this webinar. Today I want to talk about how small organizations can use data to make better decisions.
+
+Let me start with a simple story. Three years ago, I worked with a nonprofit in Ohio that ran twelve community centers. They had plenty of information, but nobody looked at it. Attendance numbers were stored in spreadsheets, donations were tracked in a separate system, and volunteer hours were written on paper.
+
+The first thing we did was not buy new software. Instead, we asked a single question: which programs actually help people the most? That question changed everything. When you begin with a question, the data you need becomes obvious.
+
+Now, there are three principles I want you to remember. The first principle is to measure what matters. It is easy to count things, but counting the wrong things can be worse than counting nothing at all. The second principle is to keep it simple. A small dashboard with five numbers is more useful than a huge report that nobody reads. The third principle is to share the results with everyone, including volunteers and the people you serve.
+
+Let me give you a concrete example. One of the community centers offered a free computer class on Tuesday evenings. Attendance was low, only about eight people per week. The director wanted to cancel it. But when we looked closer, we discovered that almost half of the participants found a job within six months. That is a remarkable result. So instead of canceling the class, they moved it to Saturday morning, and attendance grew to twenty-five people.
+
+Here is another important point. Data is not only about numbers. Stories and feedback are data too. We started asking participants to answer two short questions after each session. What did you learn today? And what would you change? Those answers were incredibly valuable.
+
+Of course, there are challenges. Privacy is one of them. You must protect personal information and ask for permission before collecting it. Another challenge is time. Staff members are busy, so the process has to be fast and easy.
+
+Before we move to questions, let me summarize. Start with a question, not with a tool. Measure what matters, keep it simple, and share the results. If you do these things, even a very small team can make smarter decisions. Thank you very much for your attention. I am happy to answer your questions now.
